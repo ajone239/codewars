@@ -129,22 +129,21 @@ fn persistence(num: u64) -> u64 {
 
 #[allow(dead_code)]
 fn sum_pairs(ints: &[i8], s: i8) -> Option<(i8, i8)> {
-    println!("new {}", s);
-    let mut rv: Vec<(&i8, &i8)> = vec![];
+
     let mut low: usize = ints.len();
+    let mut ret: Option<(i8, i8)> = None;
 
     for (i,item) in ints.iter().enumerate() {
         if i >= low { break; }
         for (j, jtem) in ints[(i + 1)..low].iter().enumerate(){
             if item + jtem == s {
-                rv.push((item, jtem));
-                println!("i:{} j:{}",i ,j + i);
+                ret = Some((*item, *jtem));
                 low = j + i + 1;
                 break;
             }
         }
     }
-    rv.pop().map(|(i, j)| (*i, *j))
+    return ret;
 }
 
 #[cfg(test)]
