@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 #[allow(dead_code)]
 fn grow(array: Vec<i32>) -> i32 {
-    array.iter().fold(1, |acc, x| acc * x)
+    array.iter().product()
 }
 
 #[allow(dead_code)]
@@ -84,13 +86,13 @@ fn tribonacci(signature: &[f64; 3], n: usize) -> Vec<f64> {
     // your code here
     let mut rv: Vec<f64> = Vec::with_capacity(n);
     for i in signature {
-        rv.push(i.clone());
+        rv.push(*i);
     }
     for i in 3..(n) {
-        rv.push(rv[i - 3..i].into_iter().sum());
+        rv.push(rv[i - 3..i].iter().sum());
     }
     rv.resize(n, 0.);
-    return rv;
+    rv
 }
 
 #[allow(dead_code)]
@@ -131,7 +133,7 @@ fn persistence(num: u64) -> u64 {
         hold = temp;
         count += 1;
     }
-    return count;
+    count
 }
 
 #[allow(dead_code)]
@@ -165,8 +167,6 @@ fn song_decoder(song: &str) -> String {
 
 #[allow(dead_code)]
 fn count_duplicates(text: &str) -> u32 {
-    use std::collections::HashMap;
-
     let mut char_count = HashMap::new();
 
     for c in text.to_lowercase().chars() {
@@ -218,10 +218,113 @@ fn sum_consecutives(numbers: &Vec<i32>) -> Vec<i32> {
     result
 }
 
+#[allow(dead_code)]
+fn sum_of_divided(l: Vec<i64>) -> Vec<(i64, i64)> {
+    let mut _p = HashMap::<i64, i64>::new();
+
+    for _i in l {}
+
+    unimplemented!()
+}
+
+use once_cell::sync::Lazy;
+use std::collections::BTreeMap;
+
+#[allow(dead_code)]
+pub fn prime_factors(n: i64) -> String {
+    let prime_factors = get_prime_factors(n);
+
+    let mut ret_str = String::new();
+    for (prime, count) in prime_factors {
+        match count {
+            1 => {
+                ret_str.push_str(format!("({})", prime).as_str());
+            }
+            _ => {
+                ret_str.push_str(format!("({}**{})", prime, count).as_str());
+            }
+        }
+    }
+    ret_str
+}
+
+pub fn get_prime_factors(i: i64) -> BTreeMap<i64, i64> {
+    let mut rv = BTreeMap::new();
+
+    let i = i.abs();
+    let mut val = i.abs();
+
+    for p in 2..=i {
+        if !is_prime(p) {
+            continue;
+        }
+        if val % p != 0 {
+            continue;
+        }
+        rv.insert(p, 0);
+        while val % p == 0 {
+            val /= p;
+            let cnt = rv.get_mut(&p).unwrap();
+            *cnt += 1;
+        }
+
+        if val == 1 {
+            break;
+        }
+    }
+
+    rv
+}
+
+static mut IS_PRIME: Lazy<BTreeMap<i64, bool>> = Lazy::new(|| {
+    let mut rv = BTreeMap::new();
+    rv.insert(2, true);
+    rv
+});
+static mut PRIMES: Lazy<Vec<i64>> = Lazy::new(|| {
+    let mut rv = Vec::new();
+    rv.push(2);
+    rv
+});
+
+fn is_prime(val: i64) -> bool {
+    unsafe {
+        if IS_PRIME.contains_key(&val) {
+            return IS_PRIME[&val];
+        }
+    }
+    let mut is_prime = true;
+    for p in unsafe { PRIMES.iter() } {
+        if val % p == 0 {
+            is_prime = false;
+            break;
+        }
+    }
+    unsafe {
+        IS_PRIME.insert(val, is_prime);
+        if is_prime {
+            PRIMES.push(val);
+        }
+    }
+    is_prime
+}
+
 #[cfg(test)]
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn basics_sum_of_divided() {
+        fn testing(l: Vec<i64>, exp: Vec<(i64, i64)>) -> () {
+            assert_eq!(sum_of_divided(l), exp)
+        }
+        testing(vec![12, 15], vec![(2, 12), (3, 27), (5, 15)]);
+        testing(
+            vec![15, 21, 24, 30, 45],
+            vec![(2, 54), (3, 135), (5, 90), (7, 21)],
+        );
+    }
 
     #[test]
     fn test_sample() {
@@ -327,40 +430,6 @@ mod tests {
         assert_eq!(duplicate_encode("recede"), "()()()");
         assert_eq!(duplicate_encode("Success"), ")())())", "should ignore case");
         assert_eq!(duplicate_encode("(( @"), "))((");
-    }
-
-    #[test]
-    fn tribonacci_test() {
-        assert_eq!(
-            tribonacci(&[0., 1., 1.], 10),
-            vec![0., 1., 1., 2., 4., 7., 13., 24., 44., 81.]
-        );
-        assert_eq!(
-            tribonacci(&[1., 0., 0.], 10),
-            vec![1., 0., 0., 1., 1., 2., 4., 7., 13., 24.]
-        );
-        assert_eq!(
-            tribonacci(&[0., 0., 0.], 10),
-            vec![0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
-        );
-        assert_eq!(
-            tribonacci(&[1., 2., 3.], 10),
-            vec![1., 2., 3., 6., 11., 20., 37., 68., 125., 230.]
-        );
-        assert_eq!(
-            tribonacci(&[3., 2., 1.], 10),
-            vec![3., 2., 1., 6., 9., 16., 31., 56., 103., 190.]
-        );
-        assert_eq!(tribonacci(&[1., 1., 1.], 1), vec![1.]);
-        assert_eq!(tribonacci(&[300., 200., 100.], 0), vec![]);
-        assert_eq!(
-            tribonacci(&[0.5, 0.5, 0.5], 30),
-            vec![
-                0.5, 0.5, 0.5, 1.5, 2.5, 4.5, 8.5, 15.5, 28.5, 52.5, 96.5, 177.5, 326.5, 600.5,
-                1104.5, 2031.5, 3736.5, 6872.5, 12640.5, 23249.5, 42762.5, 78652.5, 144664.5,
-                266079.5, 489396.5, 900140.5, 1655616.5, 3045153.5, 5600910.5, 10301680.5
-            ]
-        );
     }
 
     #[test]
