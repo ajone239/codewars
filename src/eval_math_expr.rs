@@ -55,7 +55,7 @@ const OPERATORS: &str = "*/+-";
 
 #[allow(dead_code)]
 pub fn calc(expr: &str) -> f64 {
-    println!("{}", expr);
+    println!("*** {}", expr);
     let parens = find_parens(expr);
 
     // recurse on parens
@@ -66,13 +66,32 @@ pub fn calc(expr: &str) -> f64 {
 
     // replace the parens
     let mut expr = expr.to_string();
-    for ((start, end), parens_eval) in parens.iter().zip(parens_eval.iter()) {
-        expr.replace_range(start..&(end + 1), &format!("{}", parens_eval));
+
+    for ((start, end), parens_eval) in parens.iter().zip(parens_eval.iter()).rev() {
+        println!("{} {} {}", start, end, parens_eval);
+        if parens_eval >= &0.0 {
+            expr.replace_range(start..&(end + 1), &format!("{}", parens_eval));
+        } else {
+            if start == &0 {
+                expr.replace_range(start..&(end + 1), &format!("{}", parens_eval));
+            } else if start == &1 && expr.chars().nth(start - 1).unwrap() == '-' {
+                expr.replace_range(&(start - 1)..&(end + 1), &format!("{}", -parens_eval));
+            } else if start >= &2 && expr.chars().nth(start - 1).unwrap() == '-' {
+                if expr.chars().nth(start - 2).unwrap().is_digit(10) {
+                    expr.replace_range(&(start - 1)..&(end + 1), &format!("+{}", -parens_eval));
+                } else {
+                    expr.replace_range(&(start - 1)..&(end + 1), &format!("{}", -parens_eval));
+                }
+            } else {
+                expr.replace_range(start..&(end + 1), &format!("{}", parens_eval));
+            }
+        }
     }
+
     println!("{}", expr);
 
     // split the expression
-    let mut expressions = split_expr(&expr);
+    let expressions = split_expr(&expr);
 
     // evaluate the expressions
     return eval_expr(expressions);
@@ -89,10 +108,10 @@ fn find_parens(expr: &str) -> Vec<(usize, usize)> {
                 None => last_open = Some(i),
                 Some(_) => open_count += 1,
             }
-        }
-        if c == ')' {
+        } else if c == ')' {
             match open_count {
                 0 => {
+                    // UNWRAP: should be safe on good input
                     parens.push((last_open.unwrap(), i));
                     last_open = None;
                 }
