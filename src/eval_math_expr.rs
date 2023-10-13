@@ -68,7 +68,6 @@ pub fn calc(expr: &str) -> f64 {
     let mut expr = expr.to_string();
 
     for ((start, end), parens_eval) in parens.iter().zip(parens_eval.iter()).rev() {
-        println!("{} {} {}", start, end, parens_eval);
         if parens_eval >= &0.0 {
             expr.replace_range(start..&(end + 1), &format!("{}", parens_eval));
         } else {
