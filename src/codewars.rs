@@ -220,93 +220,50 @@ fn sum_consecutives(numbers: &Vec<i32>) -> Vec<i32> {
 
 #[allow(dead_code)]
 fn sum_of_divided(l: Vec<i64>) -> Vec<(i64, i64)> {
-    let mut _p = HashMap::<i64, i64>::new();
+    use std::collections::BTreeMap;
 
-    for _i in l {}
+    let mut factor_sum = BTreeMap::new();
 
-    unimplemented!()
-}
+    // n = l.len()
+    // m = l.iter().max()
+    //
+    // total runtime:
+    //
+    // n * (sqrt(m) + sqrt(m) * log(sqrt(m))) + sqrt(m)
+    //
+    // O(n * sqrt(m) * log(sqrt(m)))
 
-use once_cell::sync::Lazy;
-use std::collections::BTreeMap;
+    // n
+    for i in l {
+        // sqrt(m)
+        let factors = factorize(i);
 
-#[allow(dead_code)]
-pub fn prime_factors(n: i64) -> String {
-    let prime_factors = get_prime_factors(n);
-
-    let mut ret_str = String::new();
-    for (prime, count) in prime_factors {
-        match count {
-            1 => {
-                ret_str.push_str(format!("({})", prime).as_str());
-            }
-            _ => {
-                ret_str.push_str(format!("({}**{})", prime, count).as_str());
-            }
-        }
-    }
-    ret_str
-}
-
-pub fn get_prime_factors(i: i64) -> BTreeMap<i64, i64> {
-    let mut rv = BTreeMap::new();
-
-    let i = i.abs();
-    let mut val = i.abs();
-
-    for p in 2..=i {
-        if !is_prime(p) {
-            continue;
-        }
-        if val % p != 0 {
-            continue;
-        }
-        rv.insert(p, 0);
-        while val % p == 0 {
-            val /= p;
-            let cnt = rv.get_mut(&p).unwrap();
-            *cnt += 1;
-        }
-
-        if val == 1 {
-            break;
+        // sqrt(m)
+        for factor in factors {
+            // log(sqrt(m))
+            let sum = factor_sum.entry(factor).or_insert(0);
+            *sum += i;
         }
     }
 
-    rv
+    // sqrt(m)
+    factor_sum.into_iter().map(|(k, v)| (k, v)).collect()
 }
 
-static mut IS_PRIME: Lazy<BTreeMap<i64, bool>> = Lazy::new(|| {
-    let mut rv = BTreeMap::new();
-    rv.insert(2, true);
-    rv
-});
-static mut PRIMES: Lazy<Vec<i64>> = Lazy::new(|| {
+fn factorize(n: i64) -> Vec<i64> {
+    let mut n = n;
+    let mut factor = 2;
     let mut rv = Vec::new();
-    rv.push(2);
+    while n > 1 {
+        if n % factor == 0 {
+            rv.push(factor);
+            while n % factor == 0 {
+                n /= factor;
+            }
+        }
+        factor += 1;
+    }
     rv
-});
-
-fn is_prime(val: i64) -> bool {
-    unsafe {
-        if IS_PRIME.contains_key(&val) {
-            return IS_PRIME[&val];
-        }
-    }
-    let mut is_prime = true;
-    for p in unsafe { PRIMES.iter() } {
-        if val % p == 0 {
-            is_prime = false;
-            break;
-        }
-    }
-    unsafe {
-        IS_PRIME.insert(val, is_prime);
-        if is_prime {
-            PRIMES.push(val);
-        }
-    }
-    is_prime
 }
 
 #[cfg(test)]

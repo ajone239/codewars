@@ -67,7 +67,7 @@ pub fn calc(expr: &str) -> f64 {
     let mut expr = expr.to_string();
 
     for ((start, end), parens_eval) in parens.iter().zip(parens_eval.iter()).rev() {
-        if start == &0 {
+        if parens_eval >= &0.0 {
             expr.replace_range(start..&(end + 1), &format!("{}", parens_eval));
         } else if start == &1 && expr.chars().nth(start - 1).unwrap() == '-' {
             expr.replace_range(&(start - 1)..&(end + 1), &format!("{}", -parens_eval));
