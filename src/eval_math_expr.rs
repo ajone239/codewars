@@ -55,7 +55,6 @@ const OPERATORS: &str = "*/+-";
 
 #[allow(dead_code)]
 pub fn calc(expr: &str) -> f64 {
-    println!("*** {}", expr);
     let parens = find_parens(expr);
 
     // recurse on parens
@@ -68,33 +67,26 @@ pub fn calc(expr: &str) -> f64 {
     let mut expr = expr.to_string();
 
     for ((start, end), parens_eval) in parens.iter().zip(parens_eval.iter()).rev() {
-        println!("{} {} {}", start, end, parens_eval);
-        if parens_eval >= &0.0 {
+        if start == &0 {
             expr.replace_range(start..&(end + 1), &format!("{}", parens_eval));
-        } else {
-            if start == &0 {
-                expr.replace_range(start..&(end + 1), &format!("{}", parens_eval));
-            } else if start == &1 && expr.chars().nth(start - 1).unwrap() == '-' {
-                expr.replace_range(&(start - 1)..&(end + 1), &format!("{}", -parens_eval));
-            } else if start >= &2 && expr.chars().nth(start - 1).unwrap() == '-' {
-                if expr.chars().nth(start - 2).unwrap().is_digit(10) {
-                    expr.replace_range(&(start - 1)..&(end + 1), &format!("+{}", -parens_eval));
-                } else {
-                    expr.replace_range(&(start - 1)..&(end + 1), &format!("{}", -parens_eval));
-                }
+        } else if start == &1 && expr.chars().nth(start - 1).unwrap() == '-' {
+            expr.replace_range(&(start - 1)..&(end + 1), &format!("{}", -parens_eval));
+        } else if start >= &2 && expr.chars().nth(start - 1).unwrap() == '-' {
+            if expr.chars().nth(start - 2).unwrap().is_ascii_digit() {
+                expr.replace_range(&(start - 1)..&(end + 1), &format!("+{}", -parens_eval));
             } else {
-                expr.replace_range(start..&(end + 1), &format!("{}", parens_eval));
+                expr.replace_range(&(start - 1)..&(end + 1), &format!("{}", -parens_eval));
             }
+        } else {
+            expr.replace_range(start..&(end + 1), &format!("{}", parens_eval));
         }
     }
-
-    println!("{}", expr);
 
     // split the expression
     let expressions = split_expr(&expr);
 
     // evaluate the expressions
-    return eval_expr(expressions);
+    eval_expr(expressions)
 }
 
 fn find_parens(expr: &str) -> Vec<(usize, usize)> {
@@ -162,7 +154,6 @@ fn eval_expr(mut expr: Vec<String>) -> f64 {
                 continue;
             }
         }
-        println!("here");
         let new_val = eval_unary(&expr[i..i + 2]);
         expr[i] = "".to_string();
         expr[i + 1] = new_val;
@@ -214,8 +205,6 @@ fn eval_expr(mut expr: Vec<String>) -> f64 {
         panic!("Invalid expression");
     }
 
-    println!("{:?}", expr);
-
     expr[0].parse::<f64>().unwrap()
 }
 
@@ -226,7 +215,6 @@ fn eval_unary(expr: &[String]) -> String {
     }
     let operator = expr[0].as_str();
 
-    println!("{:?}", expr);
     let right = expr[1].parse::<f64>().unwrap();
 
     match operator {
