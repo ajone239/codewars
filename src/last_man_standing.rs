@@ -1,35 +1,16 @@
 pub fn last_man_standing(n: u32) -> u32 {
-    let mut men = vec![0u8; n as usize];
+    let mut men: Vec<_> = (0..n).collect();
 
-    let mut direction = false;
-    loop {
-        if men.iter().filter(|m| **m == 0).count() == 1 {
-            break;
-        }
-
-        let miter = men.iter_mut().filter(|m| **m == 0);
-
-        let miter: Box<dyn Iterator<Item = &mut u8>> = if direction {
-            Box::new(miter.rev())
-        } else {
-            Box::new(miter)
-        };
-
-        for (i, m) in miter.enumerate() {
-            if i & 1 == 0 {
-                *m = 1;
-            }
-        }
-
-        direction = !direction;
+    while men.len() > 1 {
+        men = men
+            .into_iter()
+            .enumerate()
+            .filter(|(i, _)| i & 1 == 1)
+            .map(|(_, v)| v)
+            .rev()
+            .collect();
     }
-
-    (men.into_iter()
-        .enumerate()
-        .find(|(_, x)| *x == 0)
-        .unwrap()
-        .0
-        + 1) as u32
+    men[0] + 1
 }
 
 #[cfg(test)]
