@@ -250,7 +250,7 @@ fn sum_of_divided(l: Vec<i64>) -> Vec<(i64, i64)> {
     factor_sum.into_iter().map(|(k, v)| (k, v)).collect()
 }
 
-fn factorize(n: i64) -> Vec<i64> {
+pub fn factorize(n: i64) -> Vec<i64> {
     let mut n = n;
     let mut factor = 2;
     let mut rv = Vec::new();
