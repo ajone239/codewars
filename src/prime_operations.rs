@@ -39,14 +39,15 @@ fn factorize(n: u64) -> HashMap<u64, u32> {
     let root_n = (n as f64).sqrt().ceil() as u64;
     let mut rv = HashMap::new();
     for factor in 2..root_n {
-        if n % factor == 0 {
-            let mut count = 0;
-            while n % factor == 0 {
-                n /= factor;
-                count += 1;
-            }
-            rv.insert(factor, count);
+        if n % factor != 0 {
+            continue;
         }
+        let mut count = 0;
+        while n % factor == 0 {
+            n /= factor;
+            count += 1;
+        }
+        rv.insert(factor, count);
     }
     if n > 1 {
         rv.insert(n, 1);
