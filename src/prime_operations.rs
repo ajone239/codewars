@@ -36,7 +36,7 @@ fn merge(ops_count: &mut HashMap<u64, u32>, factors: HashMap<u64, u32>) {
 
 fn factorize(n: u64) -> HashMap<u64, u32> {
     let mut n = n;
-    let root_n = (n as f64).sqrt().ceil() as u64;
+    let root_n = (n as f64).sqrt().ceil() as u64 + 1;
     let mut rv = HashMap::new();
     for factor in 2..root_n {
         if n % factor != 0 {
