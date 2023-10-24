@@ -5,9 +5,35 @@ use std::fmt::Display;
 
 #[allow(dead_code)]
 fn to_postfix(_infix: &str) -> String {
-    let _tokens = tokenize(_infix);
+    let tokens = tokenize(_infix);
 
-    unimplemented!()
+    tokens_to_postfix(&tokens)
+}
+
+fn tokens_to_postfix(tokens: &[Token<'_>]) -> String {
+    let mut op_stack = OpsStack::new();
+    let mut postfix = String::new();
+
+    for token in tokens {
+        let op_stack = &mut op_stack;
+        match token {
+            Token::Operator(o) => {
+                let maybe_ops = op_stack.push(o);
+
+                if let Some(op) = maybe_ops {
+                    postfix.push_str(&op.to_string());
+                }
+            }
+
+            Token::ParenStatement(s) => {
+                postfix.push_str(to_postfix(s).as_str());
+            }
+            Token::Number(n) => {
+                postfix.push_str(&n.to_string());
+            }
+        }
+    }
+    postfix
 }
 
 fn tokenize(expr: &str) -> Vec<Token<'_>> {
@@ -51,11 +77,67 @@ fn find_closing_paren(char_iter: &mut std::iter::Enumerate<std::str::Chars>) -> 
     unreachable!()
 }
 
+fn find_least_priority_operator(tokens: &[Token<'_>]) -> usize {
+    for ops in EMDAS.iter().rev() {
+        for (i, token) in tokens.iter().enumerate() {
+            if let Token::Operator(op) = token {
+                if ops.contains(&op.to_string()) {
+                    return i;
+                }
+            }
+        }
+    }
+    unreachable!()
+}
+
+struct OpsStack<'a> {
+    stack: Vec<&'a Operator>,
+}
+
+impl<'a> OpsStack<'a> {
+    fn new() -> Self {
+        Self { stack: Vec::new() }
+    }
+
+    fn push(&'a mut self, op: &'a Operator) -> Option<String> {
+        if self.stack.is_empty() {
+            self.stack.push(op);
+            return None;
+        }
+
+        let last = self.stack.last().unwrap();
+        if last.precedence() < op.precedence()
+            || (last == &&Operator::Exponent && op == &Operator::Exponent)
+        {
+            self.stack.push(op);
+            return None;
+        }
+
+        let mut ops = String::new();
+
+        while self.stack.last().unwrap().precedence() < op.precedence() {
+            ops.push_str(&self.stack.pop().unwrap().to_string());
+        }
+        self.stack.push(op);
+        Some(ops)
+    }
+}
+
 #[derive(Debug, PartialEq)]
 enum Token<'a> {
     Number(i32),
     Operator(Operator),
     ParenStatement(&'a str),
+}
+
+impl Display for Token<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Number(n) => write!(f, "{}", n),
+            Self::Operator(o) => write!(f, "{}", o),
+            Self::ParenStatement(s) => write!(f, "({})", s),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -80,6 +162,15 @@ impl Operator {
             _ => unreachable!(),
         }
     }
+    fn precedence(&self) -> usize {
+        match self {
+            Self::Add => 1,
+            Self::Subtract => 1,
+            Self::Multiply => 2,
+            Self::Divide => 2,
+            Self::Exponent => 3,
+        }
+    }
 }
 
 impl Display for Operator {
@@ -98,6 +189,13 @@ impl Display for Operator {
 mod tests {
     use super::*;
     use rstest::rstest;
+
+    fn do_test(actual: &str, expected: &str) {
+        assert_eq!(
+            actual, expected,
+            "\nYour answer (left) is not the correct answer (right)"
+        )
+    }
 
     #[rstest]
     #[case::simple("()", 0, 1)]
@@ -148,11 +246,32 @@ mod tests {
         assert_eq!(tokenize(expr), expected);
     }
 
-    fn do_test(actual: &str, expected: &str) {
-        assert_eq!(
-            actual, expected,
-            "\nYour answer (left) is not the correct answer (right)"
+    #[rstest]
+    #[case(
+            vec![
+                Token::Number(2),
+                Token::Operator(Operator::new('+')),
+                Token::Number(7),
+                Token::Operator(Operator::new('*')),
+                Token::Number(5),
+            ],
+            1,
         )
+    ]
+    #[case(
+            vec![
+                Token::Number(3),
+                Token::Operator(Operator::new('*')),
+                Token::Number(3),
+                Token::Operator(Operator::new('/')),
+                Token::ParenStatement("7+1"),
+                Token::Operator(Operator::new('-')),
+                Token::Number(1),
+            ],
+            5,
+    )]
+    fn test_find_least_priority_operator(#[case] tokens: Vec<Token>, #[case] expected: usize) {
+        assert_eq!(find_least_priority_operator(&tokens), expected);
     }
 
     #[rstest]
