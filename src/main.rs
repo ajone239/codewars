@@ -1,7 +1,8 @@
-use codewars::prime_operations::prime_operations;
+use codewars::to_postfix::to_postfix;
 
 fn main() {
-    let x = 206158430209;
-    let y = 9664475137;
-    prime_operations(x, y);
+    let expr = "5+(6-2)*9+3^(7-1)";
+
+    let postfix = to_postfix(&expr);
+    println!("{:?}", postfix);
 }
