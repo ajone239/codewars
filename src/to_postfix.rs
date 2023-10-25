@@ -3,10 +3,81 @@
 
 use std::fmt::Display;
 
-pub fn to_postfix(_infix: &str) -> String {
-    println!("*********");
-    println!("to_postfix: {}", _infix);
-    println!("*********");
+pub fn to_postfix(infix: &str) -> String {
+    let mut stack: Vec<char> = vec![];
+    let mut postfix = String::new();
+
+    for c in infix.chars() {
+        match c {
+            '(' => stack.push(c),
+            '+' | '-' | '*' | '/' | '^' => {
+                if stack.is_empty() {
+                    stack.push(c);
+                    continue;
+                }
+
+                let last = stack.last().unwrap();
+
+                if last == &'(' {
+                    stack.push(c);
+                    continue;
+                }
+
+                if precedence(c) > precedence(*last) || (*last == '^' && c == '^') {
+                    stack.push(c);
+                    continue;
+                }
+
+                while let Some(op) = stack.last() {
+                    if *op == '(' {
+                        break;
+                    }
+                    if precedence(*op) < precedence(c) {
+                        break;
+                    }
+                    postfix.push_str(&op.to_string());
+                    stack.pop();
+                }
+                stack.push(c);
+            }
+            '0'..='9' => {
+                postfix.push(c);
+            }
+            ')' => {
+                let ops = stack_dump(&mut stack);
+                postfix.push_str(&ops);
+            }
+            _ => unreachable!(),
+        }
+    }
+    let ops = stack_dump(&mut stack);
+    postfix.push_str(&ops);
+    postfix
+}
+
+fn precedence(op: char) -> usize {
+    match op {
+        '+' => 1,
+        '-' => 1,
+        '*' => 2,
+        '/' => 2,
+        '^' => 3,
+        _ => unreachable!(),
+    }
+}
+
+fn stack_dump(stack: &mut Vec<char>) -> String {
+    let mut ops = String::new();
+    while let Some(op) = stack.pop() {
+        if op == '(' {
+            break;
+        }
+        ops.push_str(&op.to_string());
+    }
+    ops
+}
+
+pub fn to_postfix2(_infix: &str) -> String {
     let tokens = tokenize(_infix);
 
     tokens_to_postfix(&tokens)
@@ -16,24 +87,15 @@ fn tokens_to_postfix(tokens: &[Token<'_>]) -> String {
     let mut op_stack = OpsStack::new();
     let mut postfix = String::new();
 
-    println!("Tokens: {:?}", tokens);
-
     for token in tokens {
-        println!("token: {}", token);
-        println!("postfix: {}", postfix);
         match token {
             Token::Operator(o) => {
                 if let Some(op) = op_stack.push(o.clone()) {
                     postfix.push_str(&op.to_string());
                 }
             }
-
             Token::ParenStatement(s) => {
-                println!();
-                println!("paren: {}", s);
                 postfix.push_str(to_postfix(s).as_str());
-                println!("out");
-                println!();
             }
             Token::Number(n) => {
                 postfix.push_str(&n.to_string());
@@ -121,6 +183,7 @@ impl OpsStack {
 
         Some(ops)
     }
+
     fn dump(mut self) -> String {
         let mut ops = String::new();
         while let Some(op) = self.stack.pop() {
