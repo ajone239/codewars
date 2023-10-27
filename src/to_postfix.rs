@@ -4,53 +4,30 @@
 use std::fmt::Display;
 
 pub fn to_postfix(infix: &str) -> String {
-    let mut stack: Vec<char> = vec![];
+    let mut stack = OpsStack2::new();
     let mut postfix = String::new();
 
     for c in infix.chars() {
         match c {
-            '(' => stack.push(c),
-            '+' | '-' | '*' | '/' | '^' => {
-                if stack.is_empty() {
-                    stack.push(c);
-                    continue;
-                }
-
-                let last = stack.last().unwrap();
-
-                if last == &'(' {
-                    stack.push(c);
-                    continue;
-                }
-
-                if precedence(c) > precedence(*last) || (*last == '^' && c == '^') {
-                    stack.push(c);
-                    continue;
-                }
-
-                while let Some(op) = stack.last() {
-                    if *op == '(' {
-                        break;
-                    }
-                    if precedence(*op) < precedence(c) {
-                        break;
-                    }
-                    postfix.push_str(&op.to_string());
-                    stack.pop();
-                }
+            '(' => {
                 stack.push(c);
+            }
+            '+' | '-' | '*' | '/' | '^' => {
+                if let Some(op) = stack.push(c) {
+                    postfix.push_str(&op.to_string());
+                }
             }
             '0'..='9' => {
                 postfix.push(c);
             }
             ')' => {
-                let ops = stack_dump(&mut stack);
+                let ops = stack.dump();
                 postfix.push_str(&ops);
             }
             _ => unreachable!(),
         }
     }
-    let ops = stack_dump(&mut stack);
+    let ops = stack.dump();
     postfix.push_str(&ops);
     postfix
 }
@@ -62,19 +39,64 @@ fn precedence(op: char) -> usize {
         '*' => 2,
         '/' => 2,
         '^' => 3,
-        _ => unreachable!(),
+        _ => panic!("Unknown operator {:?}", op),
     }
 }
 
-fn stack_dump(stack: &mut Vec<char>) -> String {
-    let mut ops = String::new();
-    while let Some(op) = stack.pop() {
-        if op == '(' {
-            break;
-        }
-        ops.push_str(&op.to_string());
+struct OpsStack2 {
+    stack: Vec<char>,
+}
+
+impl OpsStack2 {
+    fn new() -> Self {
+        Self { stack: Vec::new() }
     }
-    ops
+
+    fn push(&mut self, c: char) -> Option<String> {
+        let stack = &mut self.stack;
+
+        if stack.is_empty() {
+            stack.push(c);
+            return None;
+        }
+
+        let last = stack.last().unwrap();
+
+        if last == &'(' || c == '(' {
+            stack.push(c);
+            return None;
+        }
+
+        if precedence(c) > precedence(*last) || (*last == '^' && c == '^') {
+            stack.push(c);
+            return None;
+        }
+
+        let mut ops = String::new();
+        while let Some(op) = stack.last() {
+            if *op == '(' {
+                break;
+            }
+            if precedence(*op) < precedence(c) {
+                break;
+            }
+            ops.push_str(&op.to_string());
+            stack.pop();
+        }
+        stack.push(c);
+        Some(ops)
+    }
+
+    fn dump(&mut self) -> String {
+        let mut ops = String::new();
+        while let Some(op) = self.stack.pop() {
+            if op == '(' {
+                break;
+            }
+            ops.push_str(&op.to_string());
+        }
+        ops
+    }
 }
 
 pub fn to_postfix2(_infix: &str) -> String {
