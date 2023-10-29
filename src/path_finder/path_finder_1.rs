@@ -13,7 +13,8 @@
 //! #4: where are you?
 //! #5: there's someone here
 
-fn path_finder(maze: &str) -> bool {
+#[allow(dead_code)]
+fn path_finder(_maze: &str) -> bool {
     true
 }
 

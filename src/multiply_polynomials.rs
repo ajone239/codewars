@@ -58,10 +58,29 @@
 //!
 //! This kata isn't focused on performance. However, don't go writing spaghetti code just because of this; you can still timeout if your code is poorly written.
 
-use regex::{Captures, Match, Regex};
+use regex::{Captures, Regex};
+use std::collections::BTreeMap;
+use std::fmt::Display;
 
+#[allow(dead_code)]
 fn polynomial_product(s1: &str, s2: &str) -> String {
-    todo!()
+    let p1 = Polynomial::from_string(s1);
+    let p2 = Polynomial::from_string(s2);
+
+    let mut terms = vec![];
+
+    for t1 in &p1.terms {
+        for t2 in &p2.terms {
+            let result = t1.multiply(t2);
+            terms.push(result);
+        }
+    }
+
+    let mut polynomial = Polynomial { terms };
+
+    polynomial.combine_terms();
+
+    polynomial.to_string()
 }
 
 #[derive(Debug, PartialEq)]
@@ -71,29 +90,92 @@ struct Polynomial {
 
 impl Polynomial {
     fn from_string(s: &str) -> Self {
-        let re = Regex::new(r"(-?\d+)?([a-zA-Z])?(\^(-?\d+))?").unwrap();
+        let re = Regex::new(r"(-?\d*)([a-zA-Z])?(\^(-?\d+))?").unwrap();
+
+        let s = s.chars().filter(|c| !c.is_whitespace()).collect::<String>();
 
         let mut terms = Vec::new();
-        for cap in re.captures_iter(s) {
-            if cap.get(0).unwrap().as_str().len() == 0 {
+        for cap in re.captures_iter(&s) {
+            if cap.get(0).unwrap().as_str().is_empty() {
                 continue;
             }
             terms.push(Term::from_capture(&cap));
         }
         Self { terms }
     }
+
+    fn combine_terms(&mut self) {
+        let variable = self
+            .terms
+            .iter()
+            .find(|t| !t.variable.is_empty())
+            .map(|t| t.variable.clone())
+            .unwrap_or_else(|| "x".to_string());
+
+        let mut term_map = BTreeMap::new();
+
+        for term in &self.terms {
+            let record = term_map.entry(term.power).or_insert(Term {
+                coefficient: 0,
+                variable: variable.clone(),
+                power: term.power,
+            });
+            *record = record.add(term);
+        }
+
+        let new_terms: Vec<Term> = term_map
+            .into_iter()
+            .rev()
+            .filter(|(_, term)| term.coefficient != 0)
+            .map(|(_, term)| term)
+            .collect();
+
+        if new_terms.is_empty() {
+            self.terms = vec![Term {
+                coefficient: 0,
+                variable,
+                power: 0,
+            }];
+        } else {
+            self.terms = new_terms;
+        }
+    }
+}
+
+impl Display for Polynomial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut first = true;
+        for term in &self.terms {
+            if !first && term.coefficient > 0 {
+                write!(f, "+")?;
+            }
+            write!(f, "{}", term)?;
+            first &= false;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, PartialEq)]
 struct Term {
-    coefficient: i32,
-    power: i32,
+    coefficient: i64,
+    power: i64,
+    variable: String,
 }
 
 impl Term {
     fn from_capture(cap: &Captures<'_>) -> Self {
         let coefficient = match cap.get(1) {
-            Some(c) => c.as_str().parse::<i32>().unwrap(),
+            Some(c) => {
+                let c = c.as_str();
+                if c == "-" {
+                    -1
+                } else if c.is_empty() {
+                    1
+                } else {
+                    c.parse::<i64>().unwrap()
+                }
+            }
             None => 1,
         };
         let variable = match cap.get(2) {
@@ -101,7 +183,7 @@ impl Term {
             None => "",
         };
         let power = match cap.get(4) {
-            Some(p) => p.as_str().parse::<i32>().unwrap(),
+            Some(p) => p.as_str().parse::<i64>().unwrap(),
             None => {
                 if !variable.is_empty() {
                     1
@@ -110,7 +192,11 @@ impl Term {
                 }
             }
         };
-        Self { coefficient, power }
+        Self {
+            variable: variable.to_string(),
+            coefficient,
+            power,
+        }
     }
     fn add(&self, other: &Self) -> Self {
         if self.power != other.power {
@@ -118,15 +204,45 @@ impl Term {
         }
         Self {
             coefficient: self.coefficient + other.coefficient,
+            variable: self.variable.clone(),
             power: self.power,
         }
     }
 
     fn multiply(&self, other: &Self) -> Self {
+        let variable = if !self.variable.is_empty() {
+            self.variable.clone()
+        } else {
+            other.variable.clone()
+        };
         Self {
-            coefficient: self.coefficient * other.power,
+            coefficient: self.coefficient * other.coefficient,
+            variable,
             power: self.power + other.power,
         }
+    }
+}
+
+impl Display for Term {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.power == 0 {
+            write!(f, "{}", self.coefficient)?;
+            return Ok(());
+        }
+
+        if self.coefficient == -1 {
+            write!(f, "-")?;
+        } else if self.coefficient != 1 {
+            write!(f, "{}", self.coefficient)?;
+        }
+
+        if self.power == 1 {
+            write!(f, "{}", self.variable)?;
+        } else {
+            write!(f, "{}^{}", self.variable, self.power)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -138,21 +254,77 @@ mod tests {
     use super::*;
     use rstest::rstest;
 
+    fn dotest(s1: &str, s2: &str, expected: &str) {
+        let actual = polynomial_product(s1, s2);
+        assert_eq!(
+            actual, expected,
+            "With s1 = \"{s1}\", \"{s2}\"\nExpected \"{expected}\" but got \"{actual}\""
+        )
+    }
+
     #[rstest]
     #[case(
         "x^2 + 2x + 1",
         vec![
             Term {
                 coefficient: 1,
+                variable: "x".to_string(),
                 power: 2
             },
             Term {
                 coefficient: 2,
+                variable: "x".to_string(),
                 power: 1
             },
             Term {
                 coefficient: 1,
+                variable: "".to_string(),
                 power: 0
+            }
+        ]
+    )]
+    #[case(
+        "-x^2 - 2x - 1",
+        vec![
+            Term {
+                coefficient: -1,
+                variable: "x".to_string(),
+                power: 2
+            },
+            Term {
+                coefficient: -2,
+                variable: "x".to_string(),
+                power: 1
+            },
+            Term {
+                coefficient: -1,
+                variable: "".to_string(),
+                power: 0
+            }
+        ]
+    )]
+    #[case(
+        "0",
+        vec![
+            Term {
+                coefficient: 0,
+                variable: "".to_string(),
+                power: 0
+            },
+        ]
+    )]
+    #[case(
+        "0 - x",
+        vec![
+            Term {
+                coefficient: 0,
+                variable: "".to_string(),
+                power: 0
+            },
+            Term {
+                coefficient: -1,
+                variable: "x".to_string(),
+                power: 1
             }
         ]
     )]
@@ -161,24 +333,120 @@ mod tests {
         assert_eq!(expected, polynomial.terms);
     }
 
-    fn dotest(s1: &str, s2: &str, expected: &str) {
-        let actual = polynomial_product(s1, s2);
-        assert!(
-            actual == expected,
-            "With s1 = \"{s1}\", \"{s2}\"\nExpected \"{expected}\" but got \"{actual}\""
-        )
+    #[rstest]
+    #[case(
+        Term {
+            coefficient: 1,
+            variable: "x".to_string(),
+            power: 2
+        },
+        "x^2",
+    )]
+    #[case(
+        Term {
+            coefficient: -1,
+            variable: "x".to_string(),
+            power: 1
+        },
+        "-x",
+    )]
+    #[case(
+        Term {
+            coefficient: 1,
+            variable: "x".to_string(),
+            power: 0
+        },
+        "1",
+    )]
+    #[case(
+        Term {
+            coefficient: -1,
+            variable: "".to_string(),
+            power: 0
+        },
+        "-1",
+    )]
+    fn test_firm_display(#[case] term: Term, #[case] expected: String) {
+        assert_eq!(expected, term.to_string());
     }
 
-    #[test]
-    fn example_tests() {
-        dotest("u^2 + 2u+1", "u + 1", "u^3+3u^2+3u+1");
-        dotest("x^2", "3x - 1", "3x^3-x^2");
-        dotest("2", "4y - 4", "8y-8");
-        dotest("-4r^2 + 1", "-1", "4r^2-1");
-        dotest("1", "p^3", "p^3");
-        dotest("1", "-1", "-1");
-        dotest("0", "2 - x", "0");
-        dotest("-1", "0", "0");
-        dotest("v^2 - 1+3v^3", "1+v^2", "3v^5+v^4+3v^3-1");
+    #[rstest]
+    #[case(
+        vec![
+            Term {
+                coefficient: 1,
+                variable: "x".to_string(),
+                power: 2
+            },
+            Term {
+                coefficient: 2,
+                variable: "x".to_string(),
+                power: 1
+            },
+            Term {
+                coefficient: 1,
+                variable: "".to_string(),
+                power: 0
+            }
+        ],
+        "x^2+2x+1",
+    )]
+    #[case(
+        vec![
+            Term {
+                coefficient: -1,
+                variable: "x".to_string(),
+                power: 2
+            },
+            Term {
+                coefficient: -2,
+                variable: "x".to_string(),
+                power: 1
+
+            },
+            Term {
+                coefficient: -1,
+                variable: "".to_string(),
+                power: 0
+            }
+        ],
+        "-x^2-2x-1",
+    )]
+    #[case(
+        vec![
+            Term {
+                coefficient: -1,
+                variable: "x".to_string(),
+                power: 1
+            }
+        ],
+        "-x",
+    )]
+    fn test_polynomial_display(#[case] terms: Vec<Term>, #[case] expected: String) {
+        assert_eq!(expected, Polynomial { terms }.to_string());
+    }
+
+    #[rstest]
+    #[case("u^2 + 3u^2 + 2u - u - u + 1", "4u^2+1")]
+    #[case("u^2 + 2u+1", "u^2+2u+1")]
+    #[case("0 + 1 - 2 + 3 - 4", "-2")]
+    fn test_polynomial_combine_terms(#[case] s: &str, #[case] expected: String) {
+        let mut polynomial = Polynomial::from_string(s);
+        polynomial.combine_terms();
+        assert_eq!(expected, polynomial.to_string());
+    }
+
+    #[rstest]
+    #[case("u^2 + 2u+1", "u + 1", "u^3+3u^2+3u+1")]
+    #[case("x^2", "3x - 1", "3x^3-x^2")]
+    #[case("2", "4y - 4", "8y-8")]
+    #[case("-4r^2 + 1", "-1", "4r^2-1")]
+    #[case("1", "p^3", "p^3")]
+    #[case("1", "-1", "-1")]
+    #[case("0", "2 - x", "0")]
+    #[case("-1", "0", "0")]
+    #[case("v^2 - 1+3v^3", "1+v^2", "3v^5+v^4+3v^3-1")]
+    fn example_tests(#[case] s1: &str, #[case] s2: &str, #[case] expected: &str) {
+        dotest(s1, s2, expected);
     }
 }
