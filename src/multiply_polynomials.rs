@@ -58,8 +58,76 @@
 //!
 //! This kata isn't focused on performance. However, don't go writing spaghetti code just because of this; you can still timeout if your code is poorly written.
 
+use regex::{Captures, Match, Regex};
+
 fn polynomial_product(s1: &str, s2: &str) -> String {
     todo!()
+}
+
+#[derive(Debug, PartialEq)]
+struct Polynomial {
+    terms: Vec<Term>,
+}
+
+impl Polynomial {
+    fn from_string(s: &str) -> Self {
+        let re = Regex::new(r"(-?\d+)?([a-zA-Z])?(\^(-?\d+))?").unwrap();
+
+        let mut terms = Vec::new();
+        for cap in re.captures_iter(s) {
+            if cap.get(0).unwrap().as_str().len() == 0 {
+                continue;
+            }
+            terms.push(Term::from_capture(&cap));
+        }
+        Self { terms }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+struct Term {
+    coefficient: i32,
+    power: i32,
+}
+
+impl Term {
+    fn from_capture(cap: &Captures<'_>) -> Self {
+        let coefficient = match cap.get(1) {
+            Some(c) => c.as_str().parse::<i32>().unwrap(),
+            None => 1,
+        };
+        let variable = match cap.get(2) {
+            Some(v) => v.as_str(),
+            None => "",
+        };
+        let power = match cap.get(4) {
+            Some(p) => p.as_str().parse::<i32>().unwrap(),
+            None => {
+                if !variable.is_empty() {
+                    1
+                } else {
+                    0
+                }
+            }
+        };
+        Self { coefficient, power }
+    }
+    fn add(&self, other: &Self) -> Self {
+        if self.power != other.power {
+            panic!("Cannot add terms");
+        }
+        Self {
+            coefficient: self.coefficient + other.coefficient,
+            power: self.power,
+        }
+    }
+
+    fn multiply(&self, other: &Self) -> Self {
+        Self {
+            coefficient: self.coefficient * other.power,
+            power: self.power + other.power,
+        }
+    }
 }
 
 // Add your tests here.
@@ -67,7 +135,31 @@ fn polynomial_product(s1: &str, s2: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::polynomial_product;
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(
+        "x^2 + 2x + 1",
+        vec![
+            Term {
+                coefficient: 1,
+                power: 2
+            },
+            Term {
+                coefficient: 2,
+                power: 1
+            },
+            Term {
+                coefficient: 1,
+                power: 0
+            }
+        ]
+    )]
+    fn test_polynomial_from_string(#[case] s: &str, #[case] expected: Vec<Term>) {
+        let polynomial = Polynomial::from_string(s);
+        assert_eq!(expected, polynomial.terms);
+    }
 
     fn dotest(s1: &str, s2: &str, expected: &str) {
         let actual = polynomial_product(s1, s2);
