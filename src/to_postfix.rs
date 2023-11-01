@@ -10,10 +10,11 @@ pub fn to_postfix(infix: &str) -> String {
     for c in infix.chars() {
         match c {
             '(' => {
-                stack.push(c);
+                // pushing '(' will never pop
+                stack.push_op_pop_precendence(c);
             }
             '+' | '-' | '*' | '/' | '^' => {
-                if let Some(op) = stack.push(c) {
+                if let Some(op) = stack.push_op_pop_precendence(c) {
                     postfix.push_str(&op.to_string());
                 }
             }
@@ -52,7 +53,7 @@ impl OpsStack2 {
         Self { stack: Vec::new() }
     }
 
-    fn push(&mut self, c: char) -> Option<String> {
+    fn push_op_pop_precendence(&mut self, c: char) -> Option<String> {
         let stack = &mut self.stack;
 
         if stack.is_empty() {
@@ -112,7 +113,7 @@ fn tokens_to_postfix(tokens: &[Token<'_>]) -> String {
     for token in tokens {
         match token {
             Token::Operator(o) => {
-                if let Some(op) = op_stack.push(o.clone()) {
+                if let Some(op) = op_stack.push_op_pop_precendence(o.clone()) {
                     postfix.push_str(&op.to_string());
                 }
             }
@@ -178,7 +179,7 @@ impl OpsStack {
         Self { stack: Vec::new() }
     }
 
-    fn push(&mut self, op: Operator) -> Option<String> {
+    fn push_op_pop_precendence(&mut self, op: Operator) -> Option<String> {
         if self.stack.is_empty() {
             self.stack.push(op);
             return None;
