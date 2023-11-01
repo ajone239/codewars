@@ -1,3 +1,4 @@
+pub mod arithmetic_sequence;
 pub mod codewars;
 pub mod eval_math_expr;
 pub mod last_man_standing;
