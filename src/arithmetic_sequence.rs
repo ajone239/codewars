@@ -21,7 +21,39 @@
 use std::collections::HashSet;
 
 pub fn sequence(n: usize) -> i64 {
-    println!("Starting {}", n);
+    if n == 0 {
+        return 0;
+    }
+
+    let mut sum_of_three: Vec<i64> = vec![0, 1];
+    let mut power_of_three = 1;
+
+    let mut rv = 0;
+    for i in 1..=n {
+        let log = log_2(i) + 1;
+
+        if log > sum_of_three.len() - 1 {
+            sum_of_three.push(sum_of_three[log - 1] + power_of_three);
+            power_of_three *= 3;
+        }
+        rv += sum_of_three[log];
+    }
+
+    rv as i64
+}
+
+fn log_2(n: usize) -> usize {
+    let mut n = n;
+    let mut log = 0;
+
+    while n & 1 == 0 {
+        n >>= 1;
+        log += 1;
+    }
+    log
+}
+
+pub fn sequence_slow(n: usize) -> i64 {
     let mut seq = Sequence::new(vec![0, 1], n);
 
     loop {
@@ -88,6 +120,7 @@ mod tests {
     #[case(2, 3)]
     #[case(3, 4)]
     #[case(4, 9)]
+    #[case(5, 10)]
     #[case(1233, 62047)]
     #[case(1435, 67909)]
     #[case(6457, 715501)]
