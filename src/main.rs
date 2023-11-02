@@ -1,3 +1,4 @@
+use codewars::arithmetic_sequence::sequence;
 fn main() {
-    println!("hello world");
+    sequence(3);
 }

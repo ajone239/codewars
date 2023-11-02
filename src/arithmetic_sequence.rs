@@ -18,37 +18,60 @@
 //!
 //! There are 1000 random tests with 0 <= n <= 10^9, so you should consider algorithmic complexity of your solution.
 
-fn sequence(n: usize) -> i64 {
+use std::collections::HashSet;
+
+pub fn sequence(n: usize) -> i64 {
     println!("Starting {}", n);
-    let mut seq = vec![0, 1];
+    let mut seq = Sequence::new(vec![0, 1], n);
 
-    while seq.len() <= n {
-        let next = find_next_value(&seq);
-        seq.push(next);
-        println!("{:?}", seq)
-    }
-
-    println!("Done {}", seq[n]);
-    println!();
-    seq[n]
-}
-
-fn find_next_value(seq: &Vec<i64>) -> i64 {
-    let mut test = *seq.last().unwrap() + 1;
-
-    for (idx, i) in seq.iter().enumerate() {
-        for j in &seq[idx + 1..] {
-            let diff = j - i;
-            let next = j + diff;
-
-            println!("{}, {}, {}", test, next, diff);
-
-            if test == next {
-                test = next + 1;
+    loop {
+        match seq.get(n) {
+            Some(i) => {
+                return i;
+            }
+            None => {
+                seq.find_next_value();
             }
         }
     }
-    test
+}
+
+#[derive(Debug)]
+struct Sequence {
+    seq: Vec<i64>,
+    bad_vals: HashSet<i64>,
+}
+
+impl Sequence {
+    fn new(seq: Vec<i64>, n: usize) -> Self {
+        Self {
+            seq,
+            bad_vals: HashSet::with_capacity(n),
+        }
+    }
+
+    fn get(&self, idx: usize) -> Option<i64> {
+        self.seq.get(idx).copied()
+    }
+
+    fn find_next_value(&mut self) {
+        let last = *self.seq.last().unwrap();
+
+        for i in self.seq.iter() {
+            let bad_val = last + last - i;
+            if !self.bad_vals.contains(&bad_val) {
+                self.bad_vals.insert(bad_val);
+            }
+        }
+
+        let mut next = last + 1;
+
+        while self.bad_vals.contains(&next) {
+            next += 1;
+        }
+
+        self.seq.push(next);
+    }
 }
 
 // Add your tests here.
@@ -66,10 +89,10 @@ mod tests {
     #[case(3, 4)]
     #[case(4, 9)]
     #[case(1233, 62047)]
-    #[case(6541, 717373)]
-    #[case(7878, 790248)]
     #[case(1435, 67909)]
     #[case(6457, 715501)]
+    #[case(6541, 717373)]
+    #[case(7878, 790248)]
     fn example_tests(#[case] n: usize, #[case] expected: i64) {
         assert_eq!(sequence(n), expected);
     }
