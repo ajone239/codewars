@@ -57,18 +57,20 @@ fn find_next_value(seq: &Vec<i64>) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::sequence;
+    use rstest::rstest;
 
-    #[test]
-    fn example_tests() {
-        assert_eq!(sequence(0), 0);
-        assert_eq!(sequence(1), 1);
-        assert_eq!(sequence(2), 3);
-        assert_eq!(sequence(3), 4);
-        assert_eq!(sequence(4), 9);
-        assert_eq!(sequence(1233), 62047);
-        // assert_eq!(sequence(6541), 717373);
-        // assert_eq!(sequence(7878), 790248);
-        // assert_eq!(sequence(1435), 67909);
-        // assert_eq!(sequence(6457), 715501);
+    #[rstest]
+    #[case(0, 0)]
+    #[case(1, 1)]
+    #[case(2, 3)]
+    #[case(3, 4)]
+    #[case(4, 9)]
+    #[case(1233, 62047)]
+    #[case(6541, 717373)]
+    #[case(7878, 790248)]
+    #[case(1435, 67909)]
+    #[case(6457, 715501)]
+    fn example_tests(#[case] n: usize, #[case] expected: i64) {
+        assert_eq!(sequence(n), expected);
     }
 }
