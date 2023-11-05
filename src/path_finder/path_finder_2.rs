@@ -20,11 +20,11 @@ use std::collections::VecDeque;
 use std::fmt::Debug;
 
 #[allow(dead_code)]
-pub fn path_finder(maze: &str) -> bool {
+pub fn path_finder(maze: &str) -> Option<u64> {
     let mut maze = Maze::new(maze);
 
     if maze.is_finished(0, 0) {
-        return true;
+        return Some(0);
     }
 
     let mut flood = Flood::new(&mut maze);
@@ -32,8 +32,8 @@ pub fn path_finder(maze: &str) -> bool {
     loop {
         match flood.flood_step() {
             FloodStep::Continue => (),
-            FloodStep::Failed => return false,
-            FloodStep::Finished => return true,
+            FloodStep::Failed => return None,
+            FloodStep::Finished(distance) => return Some(distance),
         }
     }
 }
@@ -42,7 +42,7 @@ pub fn path_finder(maze: &str) -> bool {
 enum FloodStep {
     Continue,
     Failed,
-    Finished,
+    Finished(u64),
 }
 
 #[derive(Debug)]
@@ -67,6 +67,13 @@ impl<'a> Flood<'a> {
                 return FloodStep::Failed;
             }
         };
+
+        let distance = if let Tile::Seen(d) = self.maze.tiles[y][x] {
+            d
+        } else {
+            return FloodStep::Failed;
+        };
+
         // north, east, south, west
         let directions: [(i64, i64); 4] = [(-1, 0), (0, 1), (1, 0), (0, -1)];
         let directions = directions
@@ -80,9 +87,9 @@ impl<'a> Flood<'a> {
 
         for (i, j) in directions {
             if self.maze.is_finished(i, j) {
-                return FloodStep::Finished;
+                return FloodStep::Finished(distance + 1);
             }
-            if self.maze.try_set_seen(i, j) {
+            if self.maze.try_set_seen(i, j, distance + 1) {
                 self.edges.push_back((i, j));
             }
         }
@@ -94,7 +101,7 @@ impl<'a> Flood<'a> {
 #[derive(PartialEq)]
 enum Tile {
     Empty,
-    Seen,
+    Seen(u64),
     Wall,
     Finished,
 }
@@ -102,10 +109,10 @@ enum Tile {
 impl Debug for Tile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Tile::Empty => write!(f, "."),
-            Tile::Seen => write!(f, "S"),
-            Tile::Wall => write!(f, "W"),
-            Tile::Finished => write!(f, "F"),
+            Tile::Empty => write!(f, "[ . ]"),
+            Tile::Seen(s) => write!(f, "[{:>3}]]", s),
+            Tile::Wall => write!(f, "[ W ]"),
+            Tile::Finished => write!(f, "[ F ]"),
         }
     }
 }
@@ -134,7 +141,7 @@ impl Maze {
         let width = tiles[0].len();
         let height = tiles.len();
 
-        tiles[0][0] = Tile::Seen;
+        tiles[0][0] = Tile::Seen(0);
         tiles[width - 1][height - 1] = Tile::Finished;
 
         Self {
@@ -144,11 +151,11 @@ impl Maze {
         }
     }
 
-    fn try_set_seen(&mut self, x: usize, y: usize) -> bool {
+    fn try_set_seen(&mut self, x: usize, y: usize, distance: u64) -> bool {
         if !self.legal_square(x, y) {
             return false;
         }
-        self.tiles[y][x] = Tile::Seen;
+        self.tiles[y][x] = Tile::Seen(distance);
         true
     }
 
