@@ -21,9 +21,6 @@
 use std::collections::HashSet;
 
 pub fn sequence(n: usize) -> i64 {
-    if n == 0 {
-        return 0;
-    }
     let mut n = n;
     let mut rv = 0;
 
@@ -31,7 +28,8 @@ pub fn sequence(n: usize) -> i64 {
     let mut power_of_three = 1;
 
     while n > 0 {
-        let count = (n as f64 / 2.0).ceil() as usize;
+        let odd = n & 1;
+        let count = (n / 2) + odd;
 
         rv += count * sum_of_three;
 
