@@ -7,3 +7,4 @@
 //! 5. [there's someone here](https://www.codewars.com/kata/5a05969cba2a14e541000129)
 
 pub mod path_finder_1;
+pub mod path_finder_2;
