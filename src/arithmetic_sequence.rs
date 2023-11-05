@@ -24,23 +24,20 @@ pub fn sequence(n: usize) -> i64 {
     if n == 0 {
         return 0;
     }
+    let mut n = n;
     let mut rv = 0;
 
     let mut sum_of_three = 1;
     let mut power_of_three = 1;
 
-    let rounds = (n as f64).log2().ceil() as usize;
-
-    for i in 0..=rounds {
-        let i = i + 1;
-        let count = (n as f64 / (1 << i) as f64) as usize;
+    while n > 0 {
+        let count = (n as f64 / 2.0).ceil() as usize;
 
         rv += count * sum_of_three;
 
-        println!("i: {}, rv: {}, count: {}", i, rv, count);
-
         sum_of_three += power_of_three;
         power_of_three *= 3;
+        n >>= 1;
     }
 
     rv as i64
@@ -65,7 +62,7 @@ pub fn sequence_less_slow(n: usize) -> i64 {
         rv += sum_of_three[log];
     }
 
-    rv as i64
+    rv
 }
 
 fn count_zeros_until_one(n: usize) -> usize {
