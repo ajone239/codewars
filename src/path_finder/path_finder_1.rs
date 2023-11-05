@@ -29,8 +29,6 @@ pub fn path_finder(maze: &str) -> bool {
     let mut flood = Flood::new(&mut maze);
 
     loop {
-        println!("{:?}", flood.maze);
-        println!();
         match flood.flood_step() {
             FloodStep::Continue => (),
             FloodStep::Failed => return false,
