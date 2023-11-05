@@ -1,6 +1,9 @@
 use codewars::arithmetic_sequence::sequence;
 fn main() {
-    let ten_to_nine = 10usize.pow(9);
-    let seq = sequence(ten_to_nine);
-    println!("{:?}", seq);
+    for i in 0..=3 {
+        println!("n: {}", i);
+        let seq = sequence(i);
+        println!("{:?}", seq);
+        println!();
+    }
 }
