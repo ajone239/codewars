@@ -30,6 +30,7 @@ pub fn path_finder(maze: &str) -> Option<u64> {
     let mut flood = Flood::new(&mut maze);
 
     loop {
+        println!("{:?}", flood.maze);
         match flood.flood_step() {
             FloodStep::Continue => (),
             FloodStep::Failed => return None,
@@ -109,10 +110,10 @@ enum Tile {
 impl Debug for Tile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Tile::Empty => write!(f, "[ . ]"),
-            Tile::Seen(s) => write!(f, "[{:>3}]]", s),
-            Tile::Wall => write!(f, "[ W ]"),
-            Tile::Finished => write!(f, "[ F ]"),
+            Tile::Empty => write!(f, "  ."),
+            Tile::Seen(s) => write!(f, "{:>3}", s),
+            Tile::Wall => write!(f, "  W"),
+            Tile::Finished => write!(f, "  F"),
         }
     }
 }
