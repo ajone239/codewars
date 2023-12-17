@@ -6,4 +6,5 @@ pub mod multiply_polynomials;
 pub mod path_finder;
 pub mod prime_factors;
 pub mod prime_operations;
+pub mod sodoku;
 pub mod to_postfix;
