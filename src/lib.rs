@@ -2,6 +2,7 @@ pub mod arithmetic_sequence;
 pub mod codewars;
 pub mod eval_math_expr;
 pub mod last_man_standing;
+pub mod min_cost_to_convert_string;
 pub mod multiply_polynomials;
 pub mod path_finder;
 pub mod prime_factors;
