@@ -83,6 +83,14 @@ mod tests {
         12,
     )]
     #[case(
+        "aaaa",
+        "bbbb",
+        vec!['a','c', 'a'],
+        vec!['c','b', 'c'],
+        vec![3 ,2, 2],
+        16,
+    )]
+    #[case(
         "abcd",
         "abce",
         vec!['a'],
