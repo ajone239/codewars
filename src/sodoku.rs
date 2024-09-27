@@ -56,7 +56,6 @@ fn sudoku_res(puzzle: &mut [[u8; 9]; 9], i: usize, j: usize) -> bool {
     let (new_i, new_j) = match (i, j) {
         (i, j) if j >= 8 => (i + 1, 0),
         (i, j) => (i, j + 1),
-
     };
 
     println!("{i}:{j}");
@@ -67,7 +66,6 @@ fn sudoku_res(puzzle: &mut [[u8; 9]; 9], i: usize, j: usize) -> bool {
 
     // Guess and check
     for guess in 1..=9 {
-
         // guess
         puzzle[i][j] = guess;
 
@@ -110,11 +108,12 @@ fn check_block(puzzle: &[[u8; 9]; 9]) -> bool {
         }
     }
 
-    blocks.into_iter().fold(true, |acc, row| acc & check_line(&row[..]))
+    blocks
+        .into_iter()
+        .fold(true, |acc, row| acc & check_line(&row[..]))
 }
 
 fn check_cols(puzzle: &[[u8; 9]; 9]) -> bool {
-
     let columns = (0..9)
         .into_iter()
         .map(|i| puzzle.iter().map(|r| r[i]).collect::<Vec<_>>());
