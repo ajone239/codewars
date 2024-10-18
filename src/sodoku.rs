@@ -58,7 +58,6 @@ fn sudoku_res(puzzle: &mut [[u8; 9]; 9], i: usize, j: usize) -> bool {
         (i, j) => (i, j + 1),
     };
 
-    println!("{i}:{j}");
     // Don't mess with standing values
     if puzzle[i][j] != 0 {
         return sudoku_res(puzzle, new_i, new_j);
