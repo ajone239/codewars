@@ -32,10 +32,107 @@
 //!     [3,4,5,2,8,6,1,7,9]
 //!   ]
 
+use std::collections::HashSet;
+
 #[allow(dead_code)]
-fn sudoku(puzzle: &mut [[u8; 9]; 9]) {
-    let _ = puzzle;
-    todo!()
+pub fn sudoku(puzzle: &mut [[u8; 9]; 9]) {
+    sudoku_res(puzzle, 0, 0);
+}
+
+pub fn print_board(board: &[[u8; 9]; 9]) {
+    println!();
+    for row in board {
+        println!("{:?}", row);
+    }
+}
+
+fn sudoku_res(puzzle: &mut [[u8; 9]; 9], i: usize, j: usize) -> bool {
+    // Bounds check
+    if i >= 9 || j >= 9 {
+        return true;
+    }
+
+    // Calc the next indexes
+    let (new_i, new_j) = match (i, j) {
+        (i, j) if j >= 8 => (i + 1, 0),
+        (i, j) => (i, j + 1),
+    };
+
+    // Don't mess with standing values
+    if puzzle[i][j] != 0 {
+        return sudoku_res(puzzle, new_i, new_j);
+    }
+
+    // Guess and check
+    for guess in 1..=9 {
+        // guess
+        puzzle[i][j] = guess;
+
+        // check
+        if !check_board(puzzle) {
+            continue;
+        }
+
+        // keep going
+        let success = sudoku_res(puzzle, new_i, new_j);
+
+        if success {
+            return true;
+        }
+    }
+
+    // reset if wrong
+    puzzle[i][j] = 0;
+    false
+}
+
+fn check_board(puzzle: &[[u8; 9]; 9]) -> bool {
+    check_rows(puzzle) && check_cols(puzzle) && check_block(puzzle)
+}
+
+fn check_block(puzzle: &[[u8; 9]; 9]) -> bool {
+    let mut blocks: Vec<Vec<u8>> = vec![];
+
+    for i in 0..3 {
+        for j in 0..3 {
+            let mut block: Vec<u8> = vec![];
+            for k in 0..3 {
+                let i = (i * 3) + k;
+                let j = j * 3;
+                let block_row = &puzzle[i][j..j + 3];
+
+                block.extend(block_row);
+            }
+            blocks.push(block);
+        }
+    }
+
+    blocks
+        .into_iter()
+        .fold(true, |acc, row| acc & check_line(&row[..]))
+}
+
+fn check_cols(puzzle: &[[u8; 9]; 9]) -> bool {
+    let columns = (0..9)
+        .into_iter()
+        .map(|i| puzzle.iter().map(|r| r[i]).collect::<Vec<_>>());
+
+    columns.fold(true, |acc, row| acc & check_line(&row[..]))
+}
+
+fn check_rows(puzzle: &[[u8; 9]; 9]) -> bool {
+    puzzle.iter().fold(true, |acc, row| acc & check_line(row))
+}
+
+fn check_line(line: &[u8]) -> bool {
+    let mut seen = HashSet::new();
+    for cell in line.iter().filter(|i| **i > 0) {
+        if seen.contains(cell) {
+            return false;
+        }
+        seen.insert(*cell);
+    }
+    true
 }
 
 #[cfg(test)]
